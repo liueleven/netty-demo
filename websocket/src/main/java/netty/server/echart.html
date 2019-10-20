@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="chart-name" content="基础柱状图">
+    <title>F2 图表组件库 - AntV</title>
+    <link rel="stylesheet" href="https://gw.alipayobjects.com/os/rmsportal/YmDAMEQVbLJpVbKiRQVX.css" />
+
+</head>
+<div id="main" style="height:400px"></div>
+<div  style="height:400px;text-align: center">
+    <textarea id="console" style="height:200px;width: 100px"></textarea>
+</div>
+
+<script src="http://echarts.baidu.com/build/dist/echarts.js"></script>
+<script type="text/javascript">
+    var socket;
+    var myChart;
+    initWebSocket();
+    require.config({
+        paths: {
+            echarts: 'http://echarts.baidu.com/build/dist'
+        }
+    });
+    // 使用
+    require
+    (
+        [
+            'echarts',
+            'echarts/chart/line' ,
+            'echarts/chart/bar' // 使用柱状图就加载bar模块，按需加载
+        ],
+        function (ec)
+        {
+            // 基于准备好的dom，初始化echarts图表
+            myChart = ec.init(document.getElementById('main'));
+            var option = {
+                title : {
+                    text: '测试',
+                    subtext: '纯属测试'
+                },
+                tooltip : {
+                    trigger: 'axis'
+                },
+                legend: {
+                    data:['1', '2']
+                },
+                toolbox: {
+                    show : true,
+                    feature : {
+                        mark : {show: true},
+                        dataView : {show: true, readOnly: false},
+                        magicType : {show: true, type: ['line', 'bar']},
+                        restore : {show: true},
+                        saveAsImage : {show: true}
+                    }
+                },
+                dataZoom : {
+                    show : false,
+                    start : 0,
+                    end : 100
+                },
+                xAxis : [
+                    {
+                        type : 'category',
+                        boundaryGap : true,
+                        data : (function (){
+                            var now = new Date();
+                            var res = [];
+                            var len = 4;
+                            while (len--) {
+                                res.unshift(now.toLocaleTimeString().replace(/^\D*/,''));
+                                now = new Date(now - 2000);
+                            }
+                            return res;
+                        })()
+                    },
+                    {
+                        type : 'category',
+                        boundaryGap : true,
+                        data : (function (){
+                            var res = [];
+                            var len = 200;
+                            while (len--) {
+                                res.push(len + 1);
+                            }
+                            return res;
+                        })()
+                    }
+                ],
+                yAxis : [
+                    {
+                        type : 'value',
+                    },
+                    {
+                        type : 'value',
+                    }
+                ],
+                series : [
+                    {
+                        name:'aaa',
+                        type:'bar',
+                        xAxisIndex: 1,
+                        yAxisIndex: 1,
+                        data:(function (){
+                            var res = [];
+                            var len = 200;
+                            while (len--) {
+                                res.push(Math.round(Math.random() * 1000));
+                            }
+                            return res;
+                        })()
+                    },
+                ]
+            };;
+            myChart.setOption(option);
+
+
+        }
+    );
+
+
+    function refresh(data) {
+        // 动态数据接口 addData
+        myChart.addData([
+            [
+                0,        // 系列索引
+                {
+                    value: data, // 新增数据
+                },
+                true,     // 新增数据是否从队列头部插入
+                false     // 是否增加队列长度，false则自定删除原有数据，队头插入删队尾，队尾插入删队头
+            ],
+        ]);
+    }
+    function initWebSocket() {
+        if(window.WebSocket) {
+            // 创建一个WebSocket连接
+            socket = new WebSocket("ws://localhost:8888/some");
+
+            // 当与服务端的ws连接创建成功后会触发onopen的执行
+            socket.onopen = function (ev) {
+                // 在右侧文本域中显示连接建立提示
+                var ta = document.getElementById("console");
+                ta.value = "连接已建立";
+            }
+
+            // 当接收到服务端发送的消息时会触发onmessage的执行
+            socket.onmessage = function (ev) {
+                // 将服务端发送来的消息在右侧文本域中显示，在原有内容基础上进行拼接
+                var ta = document.getElementById("console");
+                console.log("from server: ",ev.data)
+                ta.value = "from server：" + ev.data;
+                refresh(ev.data);
+            }
+
+            // 当与服务端的ws连接断开时会触发onclose的执行
+            socket.onclose = function (ev) {
+                // 将连接关闭消息在右侧文本域中显示，在原有内容基础上进行拼接
+                var ta = document.getElementById("console");
+                ta.value = ta.value + "\n连接已关闭";
+            }
+        } else {
+            alert("浏览器不支持WebSocket");
+        }
+    }
+</script>

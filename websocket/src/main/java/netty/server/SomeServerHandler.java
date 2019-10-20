@@ -1,5 +1,7 @@
 package netty.server;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -8,6 +10,7 @@ import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
+import java.util.*;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -19,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 public class SomeServerHandler extends ChannelInboundHandlerAdapter {
 
     ScheduledThreadPoolExecutor exec = null;
+    Random random = new Random();
 
 
     /**
@@ -62,11 +66,18 @@ public class SomeServerHandler extends ChannelInboundHandlerAdapter {
                 public void run() {
                     System.out.println("<=== 定时任务，模拟推送" + System.currentTimeMillis()/1000);
                     // 向所有的通道推送消息
-                    group.writeAndFlush(new TextWebSocketFrame("发送消息" + System.currentTimeMillis()/1000));
+                    group.writeAndFlush(new TextWebSocketFrame(currentData()));
                 }
-            },1000,1000, TimeUnit.MILLISECONDS);
+            },1000,2000, TimeUnit.MILLISECONDS);
         }
     }
+
+    private ByteBuf currentData() {
+        ByteBuf byteBuf = Unpooled.buffer();
+        byteBuf.writeBytes(String.valueOf(random.nextInt(100)).getBytes());
+        return byteBuf;
+    }
+
 
     /**
      * 只要有客户端Channel断开与服务端的连接就会执行这个方法
